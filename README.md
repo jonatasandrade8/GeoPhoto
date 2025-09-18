@@ -1,1 +1,1 @@
-https://jonatasandrade8.github.io/GeoPhoto/
+https://jonatasandrade8.github.io/photomarked
