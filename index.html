@@ -257,8 +257,8 @@
 
     <div class="user-config">
       <div class="config-group">
-        <label for="share-text">Texto para compartilhar com a fotto:</label>
-        <input type="text" id="share-text" placeholder="Ex: Local, Estabelecimento">
+        <label for="share-text">Texto para compartilhar:</label>
+        <input type="text" id="share-text" placeholder="Digite o texto para compartilhar">
       </div>
       <div class="permission-buttons">
         <button class="permission-btn camera-permission" id="request-camera">
@@ -370,11 +370,21 @@
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       const now = new Date().toLocaleString('pt-BR');
-      ctx.fillStyle = "rgba(0,0,0,0.6)";
-      ctx.fillRect(10, canvas.height - 60, canvas.width - 20, 50);
+      
+      // Calcular tamanho da fonte baseado na resolução da imagem
+      const baseFontSize = Math.max(canvas.width / 30, 24);
+      
+      // Adicionar fundo semi-transparente para melhor legibilidade
+      ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
+      const textPadding = baseFontSize / 2;
+      const textHeight = baseFontSize * 1.5;
+      ctx.fillRect(0, canvas.height - textHeight - textPadding, canvas.width, textHeight + textPadding);
+      
+      // Adicionar texto com fonte grande e legível
       ctx.fillStyle = "#fff";
-      ctx.font = "18px Arial";
-      ctx.fillText(now, 20, canvas.height - 25);
+      ctx.font = `bold ${baseFontSize}px Arial`;
+      ctx.textBaseline = "middle";
+      ctx.fillText(now, textPadding, canvas.height - textHeight/2);
 
       // Usar a melhor qualidade (1.0)
       const photoData = canvas.toDataURL("image/jpeg", 1.0);
