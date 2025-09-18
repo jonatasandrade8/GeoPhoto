@@ -163,6 +163,28 @@
       font-size: 0.8rem;
     }
 
+    .quality-control {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      padding: 5px 8px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .quality-control select {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      border-radius: 3px;
+      padding: 2px;
+    }
+
     .info-panel {
       padding: 15px;
       border-top: 1px solid #eee;
@@ -303,6 +325,14 @@
     <div class="camera-container">
       <video id="video" autoplay playsinline></video>
       <div class="camera-overlay" id="location-status">Obtendo localização...</div>
+      <div class="quality-control">
+        <i class="fas fa-camera"></i>
+        <select id="quality-select">
+          <option value="high">Alta Qualidade</option>
+          <option value="medium" selected>Qualidade Média</option>
+          <option value="low">Qualidade Baixa</option>
+        </select>
+      </div>
       <div class="controls">
         <button id="switch-btn" class="btn-circle"><i class="fas fa-sync-alt"></i></button>
         <button id="shutter-btn" class="btn-circle"></button>
@@ -351,6 +381,7 @@
     const requestCameraBtn = document.getElementById('request-camera');
     const requestLocationBtn = document.getElementById('request-location');
     const shareTextInput = document.getElementById('share-text');
+    const qualitySelect = document.getElementById('quality-select');
 
     let currentLocation = null;
     let currentStream = null;
@@ -359,19 +390,47 @@
     let hasCameraPermission = false;
     let hasLocationPermission = false;
     let currentEstablishment = "Nenhum estabelecimento identificado";
+    let imageQuality = 0.85; // Valor padrão para qualidade média
+
+    // Configurações de qualidade
+    const qualitySettings = {
+      high: { video: { width: { ideal: 1920 }, height: { ideal: 1080 } }, quality: 0.95 },
+      medium: { video: { width: { ideal: 1280 }, height: { ideal: 720 } }, quality: 0.85 },
+      low: { video: { width: { ideal: 640 }, height: { ideal: 480 } }, quality: 0.7 }
+    };
+
+    // Atualizar configurações de qualidade
+    qualitySelect.addEventListener('change', (e) => {
+      const quality = e.target.value;
+      imageQuality = qualitySettings[quality].quality;
+      
+      if (hasCameraPermission) {
+        // Reiniciar a câmera com as novas configurações
+        requestCameraPermission();
+      }
+    });
 
     // Solicitar permissão da câmera
     async function requestCameraPermission() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+      }
+
       try {
-        currentStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: usingFrontCamera ? "user" : "environment" },
+        const quality = qualitySelect.value;
+        const constraints = {
+          video: {
+            facingMode: usingFrontCamera ? "user" : "environment",
+            ...qualitySettings[quality].video
+          },
           audio: false
-        });
+        };
+
+        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
         video.srcObject = currentStream;
         hasCameraPermission = true;
         requestCameraBtn.innerHTML = '<i class="fas fa-check"></i> Câmera Permitida';
         requestCameraBtn.style.background = '#4caf50';
-        alert('Permissão de câmera concedida!');
       } catch (err) {
         console.error("Erro ao acessar câmera:", err);
         alert("Não foi possível acessar a câmera. Verifique permissões.");
@@ -397,7 +456,6 @@
           currentLocation = position.coords;
           requestLocationBtn.innerHTML = '<i class="fas fa-check"></i> Localização Permitida';
           requestLocationBtn.style.background = '#4caf50';
-          alert('Permissão de localização concedida!');
           updateLocationInfo(position.coords);
           initGeolocation();
         },
@@ -540,8 +598,11 @@
       
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
+      
+      // Usar dimensões reais do vídeo para máxima qualidade
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
+      
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
       const now = new Date().toLocaleString('pt-BR');
@@ -554,7 +615,8 @@
       ctx.fillText(`Lng: ${currentLocation.longitude.toFixed(6)}`, 20, canvas.height - 35);
       ctx.fillText(currentEstablishment, 20, canvas.height - 15);
 
-      const photoData = canvas.toDataURL("image/jpeg");
+      // Usar a qualidade selecionada
+      const photoData = canvas.toDataURL("image/jpeg", imageQuality);
       photos.unshift(photoData);
       updateGallery();
 
