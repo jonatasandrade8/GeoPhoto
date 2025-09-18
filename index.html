@@ -1,651 +1,404 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>GeoPhoto — Marcação de Fotos (Estável)</title>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<style>
-  :root{--primary:#4285f4;--bg-start:#6a11cb;--bg-end:#2575fc}
-  *{box-sizing:border-box;font-family:Segoe UI, Tahoma, Arial, sans-serif}
-  body{min-height:100vh;margin:0;padding:20px;display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(135deg,var(--bg-start) 0%,var(--bg-end) 100%);color:#222}
-  .container{width:100%;max-width:720px;background:#fff;border-radius:16px;overflow:hidden;
-    box-shadow:0 10px 30px rgba(0,0,0,.2)}
-  header{padding:18px;background:var(--primary);color:#fff;text-align:center}
-  header h1{margin:0;font-size:1.4rem}
-  .row{display:flex;gap:12px;align-items:center;}
-  .controls{padding:16px;display:flex;flex-direction:column;gap:12px}
-  .camera-wrap{position:relative;background:#000;height:420px;display:flex;align-items:center;justify-content:center}
-  video{width:100%;height:100%;object-fit:cover;background:#000}
-  .overlay{position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,.55);color:#fff;padding:6px 10px;border-radius:8px;font-size:.9rem}
-  .permission{padding:14px;background:#fff0f0;color:#b71c1c;border-bottom:1px solid #ffdede;display:flex;flex-direction:column;gap:8px}
-  .permission .hint{font-size:.95rem}
-  .btn{padding:10px 14px;border-radius:10px;border:0;font-weight:600;cursor:pointer}
-  .btn-primary{background:var(--primary);color:#fff}
-  .btn-ghost{background:#fff;border:1px solid #ccc}
-  .controls .row{justify-content:space-between}
-  .action-bar{padding:14px;background:#f7f9fb;display:flex;gap:10px;flex-wrap:wrap}
-  .action-btn{flex:1;padding:12px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
-  .download{background:#4caf50;color:#fff}
-  .share{background:#25d366;color:#fff}
-  .gallery{padding:16px}
-  .photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  .photo-item{position:relative;border-radius:10px;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,.08)}
-  .photo-item img{width:100%;display:block;height:110px;object-fit:cover}
-  .photo-meta{padding:8px;font-size:.75rem;background:#fff}
-  .photo-actions{display:flex;gap:6px;padding:8px;justify-content:space-between}
-  .small{padding:6px 8px;font-size:.8rem;border-radius:8px}
-  .diagnostic{padding:12px;background:#fffbe6;border:1px solid #ffe58f;border-radius:8px;color:#6a4f00}
-  select,input{padding:8px;border-radius:8px;border:1px solid #ccc}
-  @media(max-width:720px){
-    .photo-grid{grid-template-columns:repeat(2,1fr)}
-    .camera-wrap{height:300px}
-  }
-  @media(max-width:420px){
-    .photo-grid{grid-template-columns:1fr}
-  }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GeoPhoto - Marcação de Fotos</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: #fff;
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #4285f4;
+      color: #fff;
+      text-align: center;
+      padding: 15px;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      margin-bottom: 5px;
+    }
+
+    .camera-container {
+      position: relative;
+      background: #000;
+      height: 320px;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* Controles flutuantes */
+    .controls {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .btn-circle {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      transition: 0.2s;
+    }
+
+    .btn-circle:active {
+      transform: scale(0.9);
+    }
+
+    #shutter-btn {
+      background: #fff;
+      border: 4px solid #4285f4;
+    }
+
+    #switch-btn {
+      background: rgba(66,133,244,0.9);
+      color: #fff;
+    }
+
+    .camera-overlay {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0,0,0,0.5);
+      color: #fff;
+      padding: 5px 8px;
+      border-radius: 5px;
+      font-size: 0.8rem;
+    }
+
+    .info-panel {
+      padding: 15px;
+      border-top: 1px solid #eee;
+    }
+
+    .info-panel p {
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-panel i {
+      color: #4285f4;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      padding: 15px;
+      background: #f8f9fa;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      flex: 1;
+      min-width: 120px;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+      transition: 0.3s;
+    }
+
+    .download-btn {
+      background: #4caf50;
+    }
+    .download-btn:hover { background: #3d8b40; }
+
+    .whatsapp-btn {
+      background: #25d366;
+    }
+    .whatsapp-btn:hover { background: #128c7e; }
+
+    .gallery {
+      padding: 15px;
+    }
+
+    .gallery h2 {
+      font-size: 1rem;
+      margin-bottom: 10px;
+      color: #4285f4;
+      text-align: center;
+    }
+
+    .photo-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    .photo-item {
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .photo-item img {
+      width: 100%;
+      height: 120px;
+      object-fit: cover;
+    }
+
+    .photo-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
+      padding: 4px;
+      font-size: 0.65rem;
+    }
+
+    @media (max-width: 400px) {
+      .btn-circle {
+        width: 50px;
+        height: 50px;
+      }
+      #shutter-btn { border-width: 3px; }
+    }
+  </style>
 </head>
 <body>
-  <div class="container" id="app-container">
+  <div class="container">
     <header>
-      <h1>GeoPhoto — Fotos com Localização</h1>
-      <div style="font-size:.85rem;opacity:.95;margin-top:6px">Tire fotos, marque com data/hora/endereço e baixe até 5 imagens</div>
+      <h1>GeoPhoto</h1>
+      <p>Fotos com localização, data e hora</p>
     </header>
 
-    <!-- Permissões e diagnóstico (sempre visível enquanto não inicializado) -->
-    <div id="permission-area" class="permission">
-      <div class="hint"><i class="fas fa-lock"></i> A aplicação precisa de acesso à câmera e localização.</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button id="btn-request" class="btn btn-primary">Permitir acesso</button>
-        <button id="btn-retry" class="btn btn-ghost">Tentar novamente</button>
-        <button id="btn-info" class="btn btn-ghost">Como liberar permissões</button>
+    <div class="camera-container">
+      <video id="video" autoplay playsinline></video>
+      <div class="camera-overlay" id="location-status">Obtendo localização...</div>
+      <div class="controls">
+        <button id="switch-btn" class="btn-circle"><i class="fas fa-sync-alt"></i></button>
+        <button id="shutter-btn" class="btn-circle"></button>
       </div>
-      <div id="diagnostic" class="diagnostic" style="display:none"></div>
     </div>
 
-    <!-- Área principal (escondida até permissão concedida) -->
-    <div id="main-area" style="display:none">
-      <div class="camera-wrap">
-        <video id="video" playsinline autoplay muted></video>
-        <div class="overlay">
-          <span id="location-status">Obtendo localização...</span>
-        </div>
-      </div>
+    <div class="info-panel">
+      <p><i class="fas fa-clock"></i> <span id="date-time">--/--/---- --:--:--</span></p>
+      <p><i class="fas fa-map-marker-alt"></i> <span id="coordinates">Lat: --, Lng: --</span></p>
+      <p><i class="fas fa-location-arrow"></i> <span id="address">Obtendo endereço...</span></p>
+    </div>
 
-      <div class="controls">
-        <div class="row">
-          <div style="display:flex;gap:8px;align-items:center">
-            <label for="camera-select">Câmera:</label>
-            <select id="camera-select"></select>
-            <button id="btn-switch" class="btn btn-ghost small" title="Trocar câmera"><i class="fas fa-sync"></i></button>
-          </div>
+    <div class="action-buttons">
+      <button class="action-btn download-btn" id="download-all" disabled>
+        <i class="fas fa-download"></i> Baixar Tudo
+      </button>
+      <button class="action-btn whatsapp-btn" id="share-all" disabled>
+        <i class="fab fa-whatsapp"></i> Compartilhar
+      </button>
+    </div>
 
-          <div style="display:flex;gap:8px;align-items:center">
-            <div id="limit-info" style="font-weight:700">0 / 5 fotos</div>
-            <div style="display:flex;gap:8px">
-              <button id="btn-capture" class="btn btn-primary" title="Tirar foto"><i class="fas fa-camera"></i> Tirar</button>
-              <button id="btn-stop" class="btn btn-ghost" title="Parar câmera"><i class="fas fa-stop"></i> Parar</button>
-            </div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div style="flex:1">
-            <div><strong>Data / Hora:</strong> <span id="date-time">--/--/---- --:--:--</span></div>
-            <div><strong>Coordenadas:</strong> <span id="coordinates">Lat: --, Lng: --</span></div>
-            <div><strong>Endereço:</strong> <span id="address">Obtendo...</span></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="action-bar">
-        <button id="btn-download-all" class="action-btn download" disabled><i class="fas fa-download"></i> Baixar todas (individuais)</button>
-        <button id="btn-share-all" class="action-btn share" disabled><i class="fab fa-whatsapp"></i> Compartilhar todas</button>
-        <button id="btn-clear" class="btn btn-ghost">Limpar galeria</button>
-      </div>
-
-      <div class="gallery">
-        <h3>Fotos recentes</h3>
-        <div class="photo-grid" id="photo-grid">
-          <!-- fotos aparecem aqui -->
+    <div class="gallery">
+      <h2>Fotos Recentes</h2>
+      <div class="photo-list" id="photo-list">
+        <div class="photo-item">
+          <img src="https://via.placeholder.com/150x120?text=Nenhuma+foto" alt="placeholder">
+          <div class="photo-info">Tire uma foto para começar</div>
         </div>
       </div>
     </div>
   </div>
 
-<script>
-/*
-  GeoPhoto — versão robusta para evitar a falha de inicialização da câmera.
-  Observações:
-   - Teste em HTTPS (ou localhost).
-   - Alguns navegadores (iOS Safari) têm limitações: nem sempre aceitam auto-play/getsMedia em background.
-*/
+  <script>
+    const video = document.getElementById('video');
+    const shutterBtn = document.getElementById('shutter-btn');
+    const switchBtn = document.getElementById('switch-btn');
+    const dateTimeElement = document.getElementById('date-time');
+    const coordinatesElement = document.getElementById('coordinates');
+    const addressElement = document.getElementById('address');
+    const locationStatus = document.getElementById('location-status');
+    const photoList = document.getElementById('photo-list');
+    const downloadAllBtn = document.getElementById('download-all');
+    const shareAllBtn = document.getElementById('share-all');
 
-const btnRequest = document.getElementById('btn-request');
-const btnRetry = document.getElementById('btn-retry');
-const btnInfo = document.getElementById('btn-info');
-const permissionArea = document.getElementById('permission-area');
-const diagnosticEl = document.getElementById('diagnostic');
+    let currentLocation = null;
+    let currentStream = null;
+    let usingFrontCamera = false;
+    let photos = [];
 
-const mainArea = document.getElementById('main-area');
-const video = document.getElementById('video');
-const cameraSelect = document.getElementById('camera-select');
-const btnSwitch = document.getElementById('btn-switch');
-const btnCapture = document.getElementById('btn-capture');
-const btnStop = document.getElementById('btn-stop');
-const btnDownloadAll = document.getElementById('btn-download-all');
-const btnShareAll = document.getElementById('btn-share-all');
-const btnClear = document.getElementById('btn-clear');
-
-const dateTimeEl = document.getElementById('date-time');
-const coordsEl = document.getElementById('coordinates');
-const addressEl = document.getElementById('address');
-const locationStatus = document.getElementById('location-status');
-const limitInfo = document.getElementById('limit-info');
-const photoGrid = document.getElementById('photo-grid');
-
-let stream = null;
-let devices = [];
-let selectedDeviceId = null;
-let watchId = null;
-let currentLocation = null;
-let photos = [];
-const MAX_PHOTOS = 5;
-let cameraInitAttempts = 0;
-const MAX_INIT_ATTEMPTS = 3;
-
-// Util: exibe diagnóstico / orientação
-function showDiagnostic(msg) {
-  diagnosticEl.style.display = 'block';
-  diagnosticEl.textContent = msg;
-}
-
-// Limpar diagnóstico
-function clearDiagnostic() {
-  diagnosticEl.style.display = 'none';
-  diagnosticEl.textContent = '';
-}
-
-// Verifica suporte
-function isGetUserMediaSupported() {
-  return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
-}
-
-// Atualiza relógio
-function updateDateTime() {
-  dateTimeEl.textContent = new Date().toLocaleString('pt-BR');
-}
-setInterval(updateDateTime, 1000);
-updateDateTime();
-
-// Enumerar câmeras disponíveis
-async function listVideoInputs() {
-  try {
-    const all = await navigator.mediaDevices.enumerateDevices();
-    devices = all.filter(d => d.kind === 'videoinput');
-    cameraSelect.innerHTML = '';
-    devices.forEach((d, idx) => {
-      const opt = document.createElement('option');
-      opt.value = d.deviceId;
-      opt.textContent = d.label || `Câmera ${idx + 1}`;
-      cameraSelect.appendChild(opt);
-    });
-    if (devices.length) {
-      selectedDeviceId = devices[0].deviceId;
-      cameraSelect.value = selectedDeviceId;
-    }
-  } catch (err) {
-    console.error('Erro ao listar dispositivos:', err);
-  }
-}
-
-// Parar stream atual com segurança
-function stopStream() {
-  try {
-    if (stream) {
-      stream.getTracks().forEach(t => t.stop());
-      stream = null;
-      video.srcObject = null;
-    }
-  } catch (e) {
-    console.warn('Erro ao parar stream:', e);
-  }
-}
-
-// Inicia a câmera com deviceId (se disponível) e constraints com fallback
-async function startCamera(deviceId = null) {
-  if (!isGetUserMediaSupported()) {
-    showDiagnostic('Seu navegador não suporta acesso à câmera (navigator.mediaDevices.getUserMedia). Use um navegador mais recente ou teste em HTTPS.');
-    return false;
-  }
-
-  stopStream();
-
-  // Constraints: tenta alta resolução, mas permite fallback do navegador
-  const constraints = {
-    video: deviceId ? { deviceId: { exact: deviceId } } : {
-      facingMode: 'environment',
-      width: { ideal: 1920 },
-      height: { ideal: 1080 }
-    },
-    audio: false
-  };
-
-  try {
-    stream = await navigator.mediaDevices.getUserMedia(constraints);
-    video.srcObject = stream;
-    clearDiagnostic();
-    cameraInitAttempts = 0;
-    // Atualiza lista de dispositivos (labels aparecem após permissão)
-    await listVideoInputs();
-    // Seleciona deviceId se não foi passado
-    if (!deviceId && devices.length) {
-      selectedDeviceId = devices[0].deviceId;
-      cameraSelect.value = selectedDeviceId;
-    }
-    // Certifica que o vídeo realmente começou - aguarda loadedmetadata
-    await waitForVideoReady(4000);
-    return true;
-  } catch (err) {
-    console.error('Erro getUserMedia:', err);
-    handleCameraError(err);
-    return false;
-  }
-}
-
-// Aguarda loadedmetadata ou timeout
-function waitForVideoReady(timeout = 3000) {
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    function onReady() {
-      if (settled) return;
-      settled = true;
-      video.removeEventListener('loadedmetadata', onReady);
-      resolve(true);
-    }
-    video.addEventListener('loadedmetadata', onReady);
-    // Timeout fallback
-    setTimeout(() => {
-      if (!settled) {
-        // Ainda resolve (alguns browsers não disparam loadedmetadata consistentemente), mas marcam aviso
-        settled = true;
-        video.removeEventListener('loadedmetadata', onReady);
-        resolve(true);
+    async function initCamera() {
+      if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
       }
-    }, timeout);
-  });
-}
 
-// Trata erros comuns ao iniciar a câmera
-function handleCameraError(err) {
-  const name = err && err.name ? err.name : '';
-  if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-    showDiagnostic('Permissão para câmera negada. Abra as configurações do navegador para permitir acesso à câmera e recarregue a página. (Ex.: ícone de cadeado na barra de endereço → Permissões).');
-  } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
-    showDiagnostic('Nenhuma câmera encontrada ou resolução solicitada não disponível. Tente trocar a câmera no seletor.');
-    listVideoInputs();
-  } else if (name === 'NotReadableError' || name === 'TrackStartError') {
-    showDiagnostic('A câmera está sendo usada por outro aplicativo. Feche outros apps/browser tabs que usam a câmera e tente novamente.');
-  } else {
-    showDiagnostic('Erro ao acessar câmera: ' + (err.message || name));
-  }
-}
-
-// Inicializa geolocalização (com watch para atualizações)
-function initGeolocation() {
-  if (!navigator.geolocation) {
-    locationStatus.textContent = 'Geolocalização não suportada';
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(pos => {
-    updateLocation(pos);
-  }, err => {
-    console.warn('Erro getCurrentPosition:', err);
-    locationStatus.textContent = 'Localização não disponível';
-  }, { enableHighAccuracy: true, timeout: 10000 });
-
-  // watchPosition para atualizações contínuas
-  if (watchId) navigator.geolocation.clearWatch(watchId);
-  watchId = navigator.geolocation.watchPosition(updateLocation, err => {
-    console.warn('watchPosition erro:', err);
-  }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 });
-}
-
-// Atualiza variáveis e UI de localização
-function updateLocation(position) {
-  currentLocation = position;
-  const { latitude, longitude } = position.coords;
-  coordsEl.textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
-  locationStatus.textContent = `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`;
-  // Obter endereço legível
-  reverseGeocode(latitude, longitude).then(place => {
-    addressEl.textContent = place;
-  });
-}
-
-// Reverse geocoding com Nominatim (OpenStreetMap)
-async function reverseGeocode(lat, lon) {
-  try {
-    const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1&namedetails=1`, {
-      headers: { 'Accept-Language': 'pt-BR' }
-    });
-    const data = await resp.json();
-    if (data) {
-      if (data.namedetails && data.namedetails.name) return data.namedetails.name;
-      if (data.address && (data.address.shop || data.address.amenity || data.address.building)) {
-        return (data.address.shop || data.address.amenity || data.address.building);
-      }
-      if (data.display_name) return data.display_name.split(',').slice(0,3).join(', ');
-    }
-    return 'Endereço não disponível';
-  } catch (e) {
-    console.warn('reverseGeocode erro:', e);
-    return 'Erro ao obter endereço';
-  }
-}
-
-// Captura foto atual (desenha no canvas e adiciona texto)
-function capturePhoto() {
-  if (!stream) { showDiagnostic('Câmera não iniciada.'); return; }
-  if (!currentLocation) { alert('Aguardando localização...'); return; }
-  if (photos.length >= MAX_PHOTOS) { alert(`Limite de ${MAX_PHOTOS} fotos atingido.`); return; }
-
-  const videoWidth = video.videoWidth || 1280;
-  const videoHeight = video.videoHeight || 720;
-  const canvas = document.createElement('canvas');
-  canvas.width = videoWidth;
-  canvas.height = videoHeight;
-  const ctx = canvas.getContext('2d');
-
-  // Desenha frame
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  // Overlay info (fundo)
-  const padding = 16;
-  const boxHeight = 110;
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(padding, canvas.height - boxHeight - padding, canvas.width - padding * 2, boxHeight);
-
-  // Texto
-  ctx.fillStyle = '#fff';
-  ctx.font = '20px Arial';
-  const now = new Date();
-  const dateTime = now.toLocaleString('pt-BR');
-  ctx.fillText(dateTime, padding + 6, canvas.height - boxHeight + 28);
-  const { latitude, longitude } = currentLocation.coords;
-  ctx.font = '18px Arial';
-  ctx.fillText(`Lat: ${latitude.toFixed(6)}`, padding + 6, canvas.height - boxHeight + 58);
-  ctx.fillText(`Lng: ${longitude.toFixed(6)}`, padding + 220, canvas.height - boxHeight + 58);
-  // Endereço (pequeno)
-  ctx.font = '18px Arial';
-  const addr = addressEl.textContent || '';
-  // quebra simples caso seja muito longo
-  const maxWidth = canvas.width - padding * 2 - 12;
-  wrapText(ctx, addr, padding + 6, canvas.height - boxHeight + 90, maxWidth, 20);
-
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-
-  photos.unshift({
-    image: dataUrl,
-    dateTime,
-    lat: latitude,
-    lng: longitude,
-    address: addr
-  });
-
-  if (photos.length > MAX_PHOTOS) photos = photos.slice(0, MAX_PHOTOS);
-
-  renderGallery();
-  updateButtonsState();
-}
-
-// util: quebra de texto para canvas
-function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
-  const words = text.split(' ');
-  let line = '';
-  for (let n = 0; n < words.length; n++) {
-    const testLine = line + words[n] + ' ';
-    const metrics = ctx.measureText(testLine);
-    const testWidth = metrics.width;
-    if (testWidth > maxWidth && n > 0) {
-      ctx.fillText(line, x, y);
-      line = words[n] + ' ';
-      y += lineHeight;
-    } else {
-      line = testLine;
-    }
-  }
-  ctx.fillText(line, x, y);
-}
-
-// Renderiza galeria
-function renderGallery() {
-  photoGrid.innerHTML = '';
-  photos.forEach((p, i) => {
-    const div = document.createElement('div');
-    div.className = 'photo-item';
-    div.innerHTML = `
-      <img src="${p.image}" alt="Foto ${i+1}">
-      <div class="photo-meta">
-        <div style="font-weight:700">${p.dateTime}</div>
-        <div style="font-size:.8rem">Lat:${p.lat.toFixed(4)} Lng:${p.lng.toFixed(4)}</div>
-        <div style="font-size:.75rem;color:#666">${p.address}</div>
-        <div class="photo-actions">
-          <div>
-            <button class="small btn-download" data-index="${i}"><i class="fas fa-download"></i> Baixar</button>
-            <button class="small btn-delete" data-index="${i}"><i class="fas fa-trash"></i> Excluir</button>
-          </div>
-          <div>
-            <button class="small btn-share" data-index="${i}"><i class="fas fa-share"></i> Compartilhar</button>
-          </div>
-        </div>
-      </div>
-    `;
-    photoGrid.appendChild(div);
-  });
-
-  // adicionar listeners para os botões gerados
-  photoGrid.querySelectorAll('.btn-download').forEach(b => {
-    b.addEventListener('click', (ev) => {
-      const idx = Number(ev.currentTarget.dataset.index);
-      downloadImage(photos[idx].image, `geo_photo_${idx+1}.jpg`);
-    });
-  });
-  photoGrid.querySelectorAll('.btn-delete').forEach(b => {
-    b.addEventListener('click', (ev) => {
-      const idx = Number(ev.currentTarget.dataset.index);
-      photos.splice(idx, 1);
-      renderGallery();
-      updateButtonsState();
-    });
-  });
-  photoGrid.querySelectorAll('.btn-share').forEach(b => {
-    b.addEventListener('click', async (ev) => {
-      const idx = Number(ev.currentTarget.dataset.index);
-      await shareSingle(photos[idx]);
-    });
-  });
-
-  limitInfo.textContent = `${photos.length} / ${MAX_PHOTOS} fotos`;
-}
-
-// Baixa uma imagem dataURL
-function downloadImage(dataUrl, filename) {
-  const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-
-// Baixar todas (cada uma individual)
-function downloadAll() {
-  if (!photos.length) return;
-  photos.forEach((p, i) => {
-    downloadImage(p.image, `geo_photo_${i+1}.jpg`);
-  });
-}
-
-// Compartilhar única foto se suportado; fallback: abrir janela do WhatsApp com texto
-async function shareSingle(photoObj) {
-  try {
-    const blob = await (await fetch(photoObj.image)).blob();
-    const file = new File([blob], `geo_photo.jpg`, { type: blob.type });
-    const shareData = { files: [file], title: 'Foto GeoPhoto', text: `${photoObj.dateTime} — ${photoObj.address}` };
-    if (navigator.canShare && navigator.canShare(shareData)) {
-      await navigator.share(shareData);
-    } else {
-      // fallback para whatsapp web com texto (não envia imagem)
-      const msg = `Veja minha foto: ${photoObj.dateTime} — ${photoObj.address}`;
-      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-    }
-  } catch (e) {
-    console.error('Erro ao compartilhar:', e);
-    alert('Compartilhar falhou. Verifique suporte do navegador.');
-  }
-}
-
-// Compartilhar todas (quando suportado)
-async function shareAll() {
-  try {
-    if (!photos.length) return;
-    const files = [];
-    for (let i = 0; i < photos.length; i++) {
-      const b = await (await fetch(photos[i].image)).blob();
-      files.push(new File([b], `geo_photo_${i+1}.jpg`, { type: b.type }));
-    }
-    const shareData = { files, title: 'Fotos GeoPhoto' };
-    if (navigator.canShare && navigator.canShare(shareData)) {
-      await navigator.share(shareData);
-    } else {
-      alert('Compartilhamento múltiplo não suportado neste navegador. Será aberto WhatsApp com texto.');
-      window.open(`https://wa.me/?text=${encodeURIComponent('Enviei fotos via GeoPhoto — use um dispositivo com suporte a compartilhamento de arquivos.')}`, '_blank');
-    }
-  } catch (e) {
-    console.error('Erro shareAll:', e);
-    alert('Falha ao compartilhar todas as fotos.');
-  }
-}
-
-function updateButtonsState() {
-  btnDownloadAll.disabled = photos.length === 0;
-  btnShareAll.disabled = photos.length === 0;
-}
-
-// Limpa galeria
-function clearGallery() {
-  if (!photos.length) return;
-  if (!confirm('Deseja realmente limpar a galeria de fotos?')) return;
-  photos = [];
-  renderGallery();
-  updateButtonsState();
-}
-
-// --- Eventos UI ---
-btnRequest.addEventListener('click', async () => {
-  clearDiagnostic();
-  // Tenta iniciar câmera e localização
-  cameraInitAttempts = 0;
-  await attemptInitFlow();
-});
-
-btnRetry.addEventListener('click', async () => {
-  clearDiagnostic();
-  await attemptInitFlow();
-});
-
-btnInfo.addEventListener('click', () => {
-  alert(`Instruções rápidas:
-- Teste em HTTPS (https://) ou localhost.
-- Se negou permissões, abra as configurações do site (cadeado na barra de endereço) e habilite Câmera/Localização.
-- Feche outras abas/apps que usem a câmera.
-- Em iOS Safari, habilite "Solicitar Desktop" se necessário e teste novamente.`);
-});
-
-// trocar câmera pelo select
-cameraSelect.addEventListener('change', async (e) => {
-  selectedDeviceId = e.target.value;
-  await startCamera(selectedDeviceId);
-});
-
-// botão alternar (troca pelo próximo device)
-btnSwitch.addEventListener('click', async () => {
-  if (!devices.length) return;
-  const idx = devices.findIndex(d => d.deviceId === selectedDeviceId);
-  const next = devices[(idx + 1) % devices.length];
-  selectedDeviceId = next.deviceId;
-  cameraSelect.value = selectedDeviceId;
-  await startCamera(selectedDeviceId);
-});
-
-btnCapture.addEventListener('click', capturePhoto);
-btnStop.addEventListener('click', () => { stopStream(); locationStatus.textContent = 'Câmera parada'; });
-
-btnDownloadAll.addEventListener('click', downloadAll);
-btnShareAll.addEventListener('click', shareAll);
-btnClear.addEventListener('click', clearGallery);
-
-// Fluxo de tentativa robusta (várias tentativas com mensagens claras)
-async function attemptInitFlow() {
-  if (!isGetUserMediaSupported()) {
-    showDiagnostic('getUserMedia não disponível. Use um navegador moderno (Chrome, Edge, Firefox) e certifique-se de estar em HTTPS.');
-    return;
-  }
-
-  // Primeiro, solicita permissões combinadas (câmera + geolocalização)
-  try {
-    // solicita câmera e força prompt de permissão.
-    cameraInitAttempts++;
-    const ok = await startCamera(selectedDeviceId);
-    if (!ok) {
-      // Se falhou por permissão, não continua
-      cameraInitAttempts >= MAX_INIT_ATTEMPTS ? showDiagnostic('Não foi possível iniciar a câmera após várias tentativas.') : null;
-      // ainda tentar geolocalização para mensagem
-      initGeolocation();
-      return;
-    }
-
-    // se câmera ok, inicia geolocalização
-    initGeolocation();
-
-    // atualiza UI: oculta área de permissão e mostra app
-    permissionArea.style.display = 'none';
-    mainArea.style.display = 'block';
-    await listVideoInputs(); // atualiza labels
-    updateButtonsState();
-  } catch (err) {
-    console.error('Erro attemptInitFlow:', err);
-    handleCameraError(err);
-  }
-}
-
-// Autostart tentativa inteligente (não força sem clique em alguns browsers)
-// chamamos autostart apenas se for localhost ou já permitido
-(async function autoStartIfPossible(){
-  // se estiver em localhost e suportado, tenta iniciar automaticamente (desenvolvimento)
-  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
-    // tenta listar dispositivos e iniciar sem interação
-    try { await listVideoInputs(); await startCamera(selectedDeviceId); initGeolocation(); permissionArea.style.display='none'; mainArea.style.display='block'; } catch (e) { /* ignore */ }
-  } else {
-    // se já tem permissão prévia, podemos iniciar sem prompt extra
-    if (navigator.permissions) {
       try {
-        const pCam = await navigator.permissions.query({ name: 'camera' });
-        const pGeo = await navigator.permissions.query({ name: 'geolocation' }).catch(()=>({state:'prompt'}));
-        if (pCam && pCam.state === 'granted') {
-          await startCamera(selectedDeviceId);
-          initGeolocation();
-          permissionArea.style.display='none'; mainArea.style.display='block';
-        }
-      } catch(e){ /* ignore quietly */ }
+        currentStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: usingFrontCamera ? "user" : "environment" },
+          audio: false
+        });
+        video.srcObject = currentStream;
+      } catch (err) {
+        console.error("Erro ao acessar câmera:", err);
+        alert("Não foi possível acessar a câmera. Verifique permissões.");
+      }
     }
-  }
-})();
 
-</script>
+    function initGeolocation() {
+      if (!navigator.geolocation) {
+        addressElement.textContent = "Geolocalização não suportada";
+        return;
+      }
+      navigator.geolocation.watchPosition(
+        pos => {
+          currentLocation = pos.coords;
+          const { latitude, longitude } = pos.coords;
+          coordinatesElement.textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+          locationStatus.textContent = `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`;
+          getAddress(latitude, longitude);
+        },
+        err => {
+          console.error("Erro geolocalização:", err);
+          locationStatus.textContent = "Localização não disponível";
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+
+    async function getAddress(lat, lng) {
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`);
+        const data = await res.json();
+        addressElement.textContent = data.display_name ? data.display_name.split(',').slice(0,3).join(',') : "Endereço não disponível";
+      } catch {
+        addressElement.textContent = "Erro ao obter endereço";
+      }
+    }
+
+    function updateDateTime() {
+      const now = new Date();
+      dateTimeElement.textContent = now.toLocaleString('pt-BR');
+    }
+    setInterval(updateDateTime, 1000);
+
+    shutterBtn.addEventListener("click", () => {
+      if (!currentLocation) {
+        alert("Aguardando localização...");
+        return;
+      }
+      capturePhoto();
+    });
+
+    switchBtn.addEventListener("click", () => {
+      usingFrontCamera = !usingFrontCamera;
+      initCamera();
+    });
+
+    function capturePhoto() {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const now = new Date().toLocaleString('pt-BR');
+      ctx.fillStyle = "rgba(0,0,0,0.6)";
+      ctx.fillRect(10, canvas.height - 80, canvas.width - 20, 70);
+      ctx.fillStyle = "#fff";
+      ctx.font = "16px Arial";
+      ctx.fillText(now, 20, canvas.height - 55);
+      ctx.fillText(`Lat: ${currentLocation.latitude.toFixed(6)}`, 20, canvas.height - 35);
+      ctx.fillText(`Lng: ${currentLocation.longitude.toFixed(6)}`, 20, canvas.height - 15);
+
+      const photoData = canvas.toDataURL("image/jpeg");
+      photos.unshift(photoData);
+      updateGallery();
+
+      downloadAllBtn.disabled = false;
+      shareAllBtn.disabled = false;
+    }
+
+    function updateGallery() {
+      photoList.innerHTML = "";
+      photos.slice(0,6).forEach(img => {
+        const div = document.createElement("div");
+        div.className = "photo-item";
+        div.innerHTML = `<img src="${img}" alt="foto"><div class="photo-info">Foto registrada</div>`;
+        photoList.appendChild(div);
+      });
+    }
+
+    downloadAllBtn.addEventListener("click", () => {
+      photos.slice(0,6).forEach((img, i) => {
+        const link = document.createElement("a");
+        link.href = img;
+        link.download = `geo_photo_${i+1}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
+    });
+
+    shareAllBtn.addEventListener("click", () => {
+      if (navigator.share) {
+        const files = photos.slice(0,3).map((img,i) => {
+          const byteString = atob(img.split(",")[1]);
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          for (let j=0;j<byteString.length;j++) ia[j] = byteString.charCodeAt(j);
+          return new File([ab], `geo_photo_${i+1}.jpg`, { type: "image/jpeg" });
+        });
+        navigator.share({ files, title:"GeoPhoto", text:"Minhas fotos georreferenciadas" })
+          .catch(() => alert("Compartilhamento não suportado neste dispositivo."));
+      } else {
+        alert("Compartilhamento não suportado neste dispositivo.");
+      }
+    });
+
+    window.addEventListener("load", () => {
+      initCamera();
+      initGeolocation();
+    });
+  </script>
 </body>
 </html>
