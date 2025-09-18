@@ -255,6 +255,20 @@
       font-size: 0.65rem;
     }
 
+    .loading {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
     @media (max-width: 400px) {
       .btn-circle {
         width: 50px;
@@ -299,6 +313,7 @@
       <p><i class="fas fa-clock"></i> <span id="date-time">--/--/---- --:--:--</span></p>
       <p><i class="fas fa-map-marker-alt"></i> <span id="coordinates">Lat: --, Lng: --</span></p>
       <p><i class="fas fa-location-arrow"></i> <span id="address">Obtendo endereço...</span></p>
+      <p><i class="fas fa-store"></i> <span id="establishment">Buscando estabelecimentos próximos...</span></p>
     </div>
 
     <div class="action-buttons">
@@ -328,6 +343,7 @@
     const dateTimeElement = document.getElementById('date-time');
     const coordinatesElement = document.getElementById('coordinates');
     const addressElement = document.getElementById('address');
+    const establishmentElement = document.getElementById('establishment');
     const locationStatus = document.getElementById('location-status');
     const photoList = document.getElementById('photo-list');
     const downloadAllBtn = document.getElementById('download-all');
@@ -342,6 +358,7 @@
     let photos = [];
     let hasCameraPermission = false;
     let hasLocationPermission = false;
+    let currentEstablishment = "Nenhum estabelecimento identificado";
 
     // Solicitar permissão da câmera
     async function requestCameraPermission() {
@@ -371,22 +388,28 @@
         return;
       }
       
+      // Mostrar indicador de carregamento
+      establishmentElement.innerHTML = '<span class="loading"></span> Buscando estabelecimentos próximos...';
+      
       navigator.geolocation.getCurrentPosition(
-        () => {
+        (position) => {
           hasLocationPermission = true;
+          currentLocation = position.coords;
           requestLocationBtn.innerHTML = '<i class="fas fa-check"></i> Localização Permitida';
           requestLocationBtn.style.background = '#4caf50';
           alert('Permissão de localização concedida!');
+          updateLocationInfo(position.coords);
           initGeolocation();
         },
         (err) => {
           console.error("Erro ao obter localização:", err);
           alert("Não foi possível acessar a localização. Verifique permissões.");
           hasLocationPermission = false;
+          establishmentElement.textContent = "Não foi possível obter a localização";
           requestLocationBtn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Permitir Localização';
           requestLocationBtn.style.background = '#673ab7';
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
     }
 
@@ -400,27 +423,99 @@
       navigator.geolocation.watchPosition(
         pos => {
           currentLocation = pos.coords;
-          const { latitude, longitude } = pos.coords;
-          coordinatesElement.textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
-          locationStatus.textContent = `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`;
-          getAddress(latitude, longitude);
+          updateLocationInfo(pos.coords);
         },
         err => {
           console.error("Erro geolocalização:", err);
           locationStatus.textContent = "Localização não disponível";
+          establishmentElement.textContent = "Localização indisponível";
         },
         { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     }
 
+    // Atualizar informações de localização
+    async function updateLocationInfo(coords) {
+      const { latitude, longitude } = coords;
+      coordinatesElement.textContent = `Lat: ${latitude.toFixed(6)}, Lng: ${longitude.toFixed(6)}`;
+      locationStatus.textContent = `Lat: ${latitude.toFixed(4)}, Lng: ${longitude.toFixed(4)}`;
+      
+      // Obter endereço e estabelecimentos próximos
+      await Promise.all([
+        getAddress(latitude, longitude),
+        getNearbyEstablishments(latitude, longitude)
+      ]);
+    }
+
     // Obter endereço a partir das coordenadas
     async function getAddress(lat, lng) {
       try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`);
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
         const data = await res.json();
-        addressElement.textContent = data.display_name ? data.display_name.split(',').slice(0,3).join(',') : "Endereço não disponível";
-      } catch {
+        
+        if (data.display_name) {
+          // Formatar o endereço de forma mais legível
+          const addressParts = data.display_name.split(',');
+          let formattedAddress = '';
+          
+          // Manter apenas as partes mais relevantes do endereço
+          if (addressParts.length > 3) {
+            formattedAddress = addressParts.slice(0, 4).join(',');
+          } else {
+            formattedAddress = data.display_name;
+          }
+          
+          addressElement.textContent = formattedAddress;
+        } else {
+          addressElement.textContent = "Endereço não disponível";
+        }
+      } catch (error) {
+        console.error("Erro ao obter endereço:", error);
         addressElement.textContent = "Erro ao obter endereço";
+      }
+    }
+
+    // Obter estabelecimentos próximos usando a API do Nominatim (OpenStreetMap)
+    async function getNearbyEstablishments(lat, lng) {
+      try {
+        // Primeiro, tentar obter estabelecimentos próximos com uma busca mais ampla
+        const radius = 100; // raio em metros
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
+        const data = await res.json();
+        
+        if (data.address) {
+          // Verificar se estamos dentro de um estabelecimento comercial
+          const address = data.address;
+          
+          if (address.amenity || address.shop || address.building) {
+            // Estamos possivelmente dentro de um estabelecimento
+            const establishmentName = address.amenity || address.shop || address.building;
+            currentEstablishment = `No(a) ${establishmentName}`;
+            
+            // Adicionar detalhes adicionais se disponíveis
+            if (address.brand) {
+              currentEstablishment += ` ${address.brand}`;
+            }
+          } else {
+            // Buscar estabelecimentos próximos com uma query mais específica
+            const nearbyRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=shop|mall|store|restaurant|cafe|market&lat=${lat}&lon=${lng}&radius=${radius}&limit=1`);
+            const nearbyData = await nearbyRes.json();
+            
+            if (nearbyData.length > 0) {
+              const closestPlace = nearbyData[0];
+              currentEstablishment = `Próximo ao(a) ${closestPlace.display_name.split(',')[0]}`;
+            } else {
+              currentEstablishment = "Nenhum estabelecimento comercial próximo identificado";
+            }
+          }
+        } else {
+          currentEstablishment = "Não foi possível identificar estabelecimentos";
+        }
+        
+        establishmentElement.textContent = currentEstablishment;
+      } catch (error) {
+        console.error("Erro ao buscar estabelecimentos:", error);
+        establishmentElement.textContent = "Erro ao buscar estabelecimentos";
       }
     }
 
@@ -451,12 +546,13 @@
 
       const now = new Date().toLocaleString('pt-BR');
       ctx.fillStyle = "rgba(0,0,0,0.6)";
-      ctx.fillRect(10, canvas.height - 80, canvas.width - 20, 70);
+      ctx.fillRect(10, canvas.height - 100, canvas.width - 20, 90);
       ctx.fillStyle = "#fff";
-      ctx.font = "16px Arial";
-      ctx.fillText(now, 20, canvas.height - 55);
-      ctx.fillText(`Lat: ${currentLocation.latitude.toFixed(6)}`, 20, canvas.height - 35);
-      ctx.fillText(`Lng: ${currentLocation.longitude.toFixed(6)}`, 20, canvas.height - 15);
+      ctx.font = "14px Arial";
+      ctx.fillText(now, 20, canvas.height - 75);
+      ctx.fillText(`Lat: ${currentLocation.latitude.toFixed(6)}`, 20, canvas.height - 55);
+      ctx.fillText(`Lng: ${currentLocation.longitude.toFixed(6)}`, 20, canvas.height - 35);
+      ctx.fillText(currentEstablishment, 20, canvas.height - 15);
 
       const photoData = canvas.toDataURL("image/jpeg");
       photos.unshift(photoData);
