@@ -45,6 +45,62 @@
       margin-bottom: 5px;
     }
 
+    .user-config {
+      padding: 15px;
+      background: #f8f9fa;
+      border-bottom: 1px solid #eee;
+    }
+
+    .config-group {
+      margin-bottom: 10px;
+    }
+
+    .config-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+      font-size: 0.9rem;
+    }
+
+    .config-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 0.9rem;
+    }
+
+    .permission-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .permission-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+      transition: 0.3s;
+    }
+
+    .camera-permission {
+      background: #ff5722;
+    }
+    .camera-permission:hover { background: #e64a19; }
+
+    .location-permission {
+      background: #673ab7;
+    }
+    .location-permission:hover { background: #5e35b1; }
+
     .camera-container {
       position: relative;
       background: #000;
@@ -215,6 +271,21 @@
       <p>Fotos com localização, data e hora</p>
     </header>
 
+    <div class="user-config">
+      <div class="config-group">
+        <label for="share-text">Texto para compartilhar:</label>
+        <input type="text" id="share-text" placeholder="Digite o texto para compartilhar">
+      </div>
+      <div class="permission-buttons">
+        <button class="permission-btn camera-permission" id="request-camera">
+          <i class="fas fa-camera"></i> Permitir Câmera
+        </button>
+        <button class="permission-btn location-permission" id="request-location">
+          <i class="fas fa-map-marker-alt"></i> Permitir Localização
+        </button>
+      </div>
+    </div>
+
     <div class="camera-container">
       <video id="video" autoplay playsinline></video>
       <div class="camera-overlay" id="location-status">Obtendo localização...</div>
@@ -261,34 +332,71 @@
     const photoList = document.getElementById('photo-list');
     const downloadAllBtn = document.getElementById('download-all');
     const shareAllBtn = document.getElementById('share-all');
+    const requestCameraBtn = document.getElementById('request-camera');
+    const requestLocationBtn = document.getElementById('request-location');
+    const shareTextInput = document.getElementById('share-text');
 
     let currentLocation = null;
     let currentStream = null;
     let usingFrontCamera = false;
     let photos = [];
+    let hasCameraPermission = false;
+    let hasLocationPermission = false;
 
-    async function initCamera() {
-      if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-      }
-
+    // Solicitar permissão da câmera
+    async function requestCameraPermission() {
       try {
         currentStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: usingFrontCamera ? "user" : "environment" },
           audio: false
         });
         video.srcObject = currentStream;
+        hasCameraPermission = true;
+        requestCameraBtn.innerHTML = '<i class="fas fa-check"></i> Câmera Permitida';
+        requestCameraBtn.style.background = '#4caf50';
+        alert('Permissão de câmera concedida!');
       } catch (err) {
         console.error("Erro ao acessar câmera:", err);
         alert("Não foi possível acessar a câmera. Verifique permissões.");
+        hasCameraPermission = false;
+        requestCameraBtn.innerHTML = '<i class="fas fa-camera"></i> Permitir Câmera';
+        requestCameraBtn.style.background = '#ff5722';
       }
     }
 
+    // Solicitar permissão de localização
+    function requestLocationPermission() {
+      if (!navigator.geolocation) {
+        alert("Geolocalização não é suportada neste navegador.");
+        return;
+      }
+      
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          hasLocationPermission = true;
+          requestLocationBtn.innerHTML = '<i class="fas fa-check"></i> Localização Permitida';
+          requestLocationBtn.style.background = '#4caf50';
+          alert('Permissão de localização concedida!');
+          initGeolocation();
+        },
+        (err) => {
+          console.error("Erro ao obter localização:", err);
+          alert("Não foi possível acessar a localização. Verifique permissões.");
+          hasLocationPermission = false;
+          requestLocationBtn.innerHTML = '<i class="fas fa-map-marker-alt"></i> Permitir Localização';
+          requestLocationBtn.style.background = '#673ab7';
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+
+    // Inicializar geolocalização
     function initGeolocation() {
       if (!navigator.geolocation) {
         addressElement.textContent = "Geolocalização não suportada";
         return;
       }
+      
       navigator.geolocation.watchPosition(
         pos => {
           currentLocation = pos.coords;
@@ -301,10 +409,11 @@
           console.error("Erro geolocalização:", err);
           locationStatus.textContent = "Localização não disponível";
         },
-        { enableHighAccuracy: true, timeout: 10000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     }
 
+    // Obter endereço a partir das coordenadas
     async function getAddress(lat, lng) {
       try {
         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=16&addressdetails=1`);
@@ -315,26 +424,25 @@
       }
     }
 
+    // Atualizar data e hora
     function updateDateTime() {
       const now = new Date();
       dateTimeElement.textContent = now.toLocaleString('pt-BR');
     }
     setInterval(updateDateTime, 1000);
 
-    shutterBtn.addEventListener("click", () => {
-      if (!currentLocation) {
-        alert("Aguardando localização...");
+    // Capturar foto
+    function capturePhoto() {
+      if (!hasCameraPermission) {
+        alert("Permissão de câmera não concedida. Clique em 'Permitir Câmera'.");
         return;
       }
-      capturePhoto();
-    });
-
-    switchBtn.addEventListener("click", () => {
-      usingFrontCamera = !usingFrontCamera;
-      initCamera();
-    });
-
-    function capturePhoto() {
+      
+      if (!hasLocationPermission) {
+        alert("Permissão de localização não concedida. Clique em 'Permitir Localização'.");
+        return;
+      }
+      
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       canvas.width = video.videoWidth;
@@ -358,6 +466,7 @@
       shareAllBtn.disabled = false;
     }
 
+    // Atualizar galeria
     function updateGallery() {
       photoList.innerHTML = "";
       photos.slice(0,6).forEach(img => {
@@ -367,6 +476,19 @@
         photoList.appendChild(div);
       });
     }
+
+    // Event listeners
+    shutterBtn.addEventListener("click", capturePhoto);
+
+    switchBtn.addEventListener("click", () => {
+      usingFrontCamera = !usingFrontCamera;
+      if (hasCameraPermission) {
+        requestCameraPermission();
+      }
+    });
+
+    requestCameraBtn.addEventListener("click", requestCameraPermission);
+    requestLocationBtn.addEventListener("click", requestLocationPermission);
 
     downloadAllBtn.addEventListener("click", () => {
       photos.slice(0,6).forEach((img, i) => {
@@ -388,16 +510,23 @@
           for (let j=0;j<byteString.length;j++) ia[j] = byteString.charCodeAt(j);
           return new File([ab], `geo_photo_${i+1}.jpg`, { type: "image/jpeg" });
         });
-        navigator.share({ files, title:"GeoPhoto", text:"Minhas fotos georreferenciadas" })
-          .catch(() => alert("Compartilhamento não suportado neste dispositivo."));
+        
+        const shareText = shareTextInput.value || "Minhas fotos georreferenciadas";
+        navigator.share({ 
+          files, 
+          title: "Photo Marked", 
+          text: shareText 
+        }).catch(() => alert("Compartilhamento não suportado neste dispositivo."));
       } else {
         alert("Compartilhamento não suportado neste dispositivo.");
       }
     });
 
+    // Inicialização
     window.addEventListener("load", () => {
-      initCamera();
-      initGeolocation();
+      updateDateTime();
+      // Não inicializamos automaticamente as permissões
+      // O usuário precisa clicar nos botões para concedê-las
     });
   </script>
 </body>
