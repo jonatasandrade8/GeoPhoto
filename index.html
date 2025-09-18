@@ -607,9 +607,9 @@
 
       const now = new Date().toLocaleString('pt-BR');
       ctx.fillStyle = "rgba(0,0,0,0.6)";
-      ctx.fillRect(10, canvas.height - 100, canvas.width - 20, 90);
+      ctx.fillRect(10, canvas.height - 120, canvas.width - 20, 110);
       ctx.fillStyle = "#fff";
-      ctx.font = "14px Arial";
+      ctx.font = "18px Arial"; // altera a fonte
       ctx.fillText(now, 20, canvas.height - 75);
       ctx.fillText(`Lat: ${currentLocation.latitude.toFixed(6)}`, 20, canvas.height - 55);
       ctx.fillText(`Lng: ${currentLocation.longitude.toFixed(6)}`, 20, canvas.height - 35);
