@@ -181,7 +181,6 @@
       padding: 15px;
       background: #f8f9fa;
       flex-wrap: wrap;
-      position: relative;
     }
 
     .action-btn {
@@ -198,7 +197,6 @@
       gap: 8px;
       color: #fff;
       transition: 0.3s;
-      position: relative;
     }
 
     .download-btn {
@@ -252,49 +250,6 @@
       font-size: 0.65rem;
     }
 
-    /* Loading spinner */
-    .loading-spinner {
-      display: none;
-      width: 20px;
-      height: 20px;
-      border: 3px solid rgba(255,255,255,0.3);
-      border-radius: 50%;
-      border-top: 3px solid #fff;
-      animation: spin 1s linear infinite;
-      margin-right: 8px;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    /* Overlay de carregamento */
-    .loading-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      color: white;
-    }
-
-    .loading-overlay .spinner-large {
-      width: 50px;
-      height: 50px;
-      border: 5px solid rgba(255,255,255,0.3);
-      border-radius: 50%;
-      border-top: 5px solid #4285f4;
-      animation: spin 1s linear infinite;
-      margin-bottom: 15px;
-    }
-
     @media (max-width: 400px) {
       .btn-circle {
         width: 50px;
@@ -313,7 +268,6 @@
 
     <div class="user-config">
       <div class="config-group">
-        <label for="share-text">Instruções: primeiro aperte em recarregar e em seguida permitir câmera</label>
         <label for="share-text">Texto para compartilhar:</label>
         <input type="text" id="share-text" placeholder="Digite o texto para compartilhar">
       </div>
@@ -344,18 +298,11 @@
 
     <div class="action-buttons">
       <button class="action-btn download-btn" id="download-all" disabled>
-        <div class="loading-spinner" id="download-spinner"></div>
         <i class="fas fa-download"></i> Baixar Tudo
       </button>
       <button class="action-btn whatsapp-btn" id="share-all" disabled>
-        <div class="loading-spinner" id="share-spinner"></div>
         <i class="fab fa-whatsapp"></i> Compartilhar
       </button>
-    </div>
-
-    <div class="loading-overlay" id="loading-overlay">
-      <div class="spinner-large"></div>
-      <p>Processando, aguarde...</p>
     </div>
 
     <div class="gallery">
@@ -380,9 +327,6 @@
     const requestCameraBtn = document.getElementById('request-camera');
     const reloadPageBtn = document.getElementById('reload-page');
     const shareTextInput = document.getElementById('share-text');
-    const downloadSpinner = document.getElementById('download-spinner');
-    const shareSpinner = document.getElementById('share-spinner');
-    const loadingOverlay = document.getElementById('loading-overlay');
 
     let currentStream = null;
     let usingFrontCamera = false;
@@ -493,22 +437,6 @@
       window.location.reload(true);
     }
 
-    // Mostrar loading
-    function showLoading(button, spinner) {
-      button.disabled = true;
-      spinner.style.display = 'block';
-      loadingOverlay.style.display = 'flex';
-    }
-
-    // Esconder loading
-    function hideLoading(button, spinner) {
-      setTimeout(() => {
-        button.disabled = false;
-        spinner.style.display = 'none';
-        loadingOverlay.style.display = 'none';
-      }, 500);
-    }
-
     // Event listeners
     shutterBtn.addEventListener("click", capturePhoto);
 
@@ -524,49 +452,35 @@
     reloadPageBtn.addEventListener("click", reloadPage);
 
     downloadAllBtn.addEventListener("click", () => {
-      showLoading(downloadAllBtn, downloadSpinner);
-      
-      setTimeout(() => {
-        photos.slice(0,6).forEach((img, i) => {
-          const link = document.createElement("a");
-          link.href = img;
-          link.download = `photo_${i+1}.jpg`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-        });
-        
-        hideLoading(downloadAllBtn, downloadSpinner);
-      }, 800);
+      photos.slice(0,6).forEach((img, i) => {
+        const link = document.createElement("a");
+        link.href = img;
+        link.download = `photo_${i+1}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      });
     });
 
     shareAllBtn.addEventListener("click", () => {
-      showLoading(shareAllBtn, shareSpinner);
-      
-      setTimeout(() => {
-        if (navigator.share) {
-          const files = photos.slice(0,3).map((img,i) => {
-            const byteString = atob(img.split(",")[1]);
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let j=0;j<byteString.length;j++) ia[j] = byteString.charCodeAt(j);
-            return new File([ab], `photo_${i+1}.jpg`, { type: "image/jpeg" });
-          });
-          
-          const shareText = shareTextInput.value || "Minhas fotos";
-          navigator.share({ 
-            files, 
-            title: "Photo Marked", 
-            text: shareText 
-          }).catch(() => {
-            alert("Compartilhamento não suportado neste dispositivo.");
-            hideLoading(shareAllBtn, shareSpinner);
-          });
-        } else {
-          alert("Compartilhamento não suportado neste dispositivo.");
-          hideLoading(shareAllBtn, shareSpinner);
-        }
-      }, 800);
+      if (navigator.share) {
+        const files = photos.slice(0,3).map((img,i) => {
+          const byteString = atob(img.split(",")[1]);
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          for (let j=0;j<byteString.length;j++) ia[j] = byteString.charCodeAt(j);
+          return new File([ab], `photo_${i+1}.jpg`, { type: "image/jpeg" });
+        });
+        
+        const shareText = shareTextInput.value || "Minhas fotos";
+        navigator.share({ 
+          files, 
+          title: "Photo Marked", 
+          text: shareText 
+        }).catch(() => alert("Compartilhamento não suportado neste dispositivo."));
+      } else {
+        alert("Compartilhamento não suportado neste dispositivo.");
+      }
     });
 
     // Inicialização
