@@ -401,27 +401,26 @@
 
       const now = new Date().toLocaleString('pt-BR');
       
-      // Calcular tamanho da fonte baseado na resolução da imagem (proporcional à altura)
-      const baseFontSize = Math.max(canvas.height / 20, 24); // Mais proporcional à altura
-
-      // Adicionar fundo que preenche toda a largura do rodapé
+      // Configurações estáticas para a marca d'água
+      const baseFontSize = 28; // Tamanho fixo da fonte
       ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
-      const textPadding = baseFontSize / 2;
-      const textHeight = baseFontSize * 1.2;
+      const textPadding = 15;
+      const textHeight = baseFontSize;
       const bgHeight = textHeight + (textPadding * 2);
-
+      
       // Posicionar no rodapé (preenche toda a largura)
       const bgY = canvas.height - bgHeight;
-
+      
       // Retângulo que preenche toda a largura do rodapé
       ctx.fillRect(0, bgY, canvas.width, bgHeight);
-
+      
       // Adicionar texto centralizado no rodapé
       ctx.fillStyle = "#fff";
-      ctx.font = `bold ${baseFontSize}px Arial`; // Tamanho dinâmico
+      ctx.font = `bold ${baseFontSize}px Arial`;
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
       ctx.fillText(now, canvas.width / 2, bgY + (bgHeight / 2));
+            
 
       // Usar a melhor qualidade (1.0)
       const photoData = canvas.toDataURL("image/jpeg", 1.0);
