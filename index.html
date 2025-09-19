@@ -401,27 +401,27 @@
 
       const now = new Date().toLocaleString('pt-BR');
       
-      // Calcular tamanho da fonte baseado na resolução da imagem
-      const baseFontSize = Math.max(canvas.width / 40, 20);
-      
-      // Adicionar fundo semi-transparente para melhor legibilidade
+      // Calcular tamanho da fonte baseado na resolução da imagem (proporcional à altura)
+      const baseFontSize = Math.max(canvas.height / 20, 24); // Mais proporcional à altura
+
+      // Adicionar fundo que preenche toda a largura do rodapé
       ctx.fillStyle = "rgba(0, 0, 0, 0.7)";
       const textPadding = baseFontSize / 2;
-      const textHeight = baseFontSize * 1.5;
-      const bgWidth = ctx.measureText(now).width + (textPadding * 2);
-      
-      // Centralizar horizontalmente na parte inferior
-      const bgX = (canvas.width - bgWidth) / 2;
-      const bgY = canvas.height - textHeight - (textPadding * 2);
-      
-      ctx.fillRect(bgX, bgY, bgWidth, textHeight + textPadding);
-      
-      // Adicionar texto com fonte grande e legível
+      const textHeight = baseFontSize * 1.2;
+      const bgHeight = textHeight + (textPadding * 2);
+
+      // Posicionar no rodapé (preenche toda a largura)
+      const bgY = canvas.height - bgHeight;
+
+      // Retângulo que preenche toda a largura do rodapé
+      ctx.fillRect(0, bgY, canvas.width, bgHeight);
+
+      // Adicionar texto centralizado no rodapé
       ctx.fillStyle = "#fff";
-      ctx.font = `bold ${baseFontSize}px Arial`;
+      ctx.font = `bold ${baseFontSize}px Arial`; // Tamanho dinâmico
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
-      ctx.fillText(now, canvas.width / 2, bgY + (textHeight / 2) + (textPadding / 2));
+      ctx.fillText(now, canvas.width / 2, bgY + (bgHeight / 2));
 
       // Usar a melhor qualidade (1.0)
       const photoData = canvas.toDataURL("image/jpeg", 1.0);
